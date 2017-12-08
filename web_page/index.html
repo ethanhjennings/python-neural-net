@@ -1,0 +1,50 @@
+<html>
+<head>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js" type="text/javascript"></script>
+    <script type="text/javascript" src="neural_network.js"></script>
+    <script type="text/javascript" src="main.js"></script>
+    <style>
+    .wrapper {
+        position: relative;
+	z-index:100;
+        display: inline-block;
+    }
+    #pixelCanvas {
+        width: 200;
+        height: 200;
+	image-rendering: pixelated;
+    }
+    #scaledCanvas {
+        position: absolute;
+	top: 0;
+	left: 0;
+        width: 200;
+        height: 200;
+	image-rendering: pixelated;
+        z-index: -6;
+    }
+    #scaledTopLayerCanvas {
+        z-index: -5;
+    }
+    .canvas {
+        position: absolute;
+	top: 0;
+	left: 0;
+    }
+    </style>
+</head>
+<body>
+    <span id="target"></span>
+    <button id="ok">Ok</button>
+    <canvas id="drawingCanvas" width="200" height="200" style="border:2px solid black"></canvas>
+    <canvas id="boundingCanvas" width="200" height="200" style="border:2px solid black"></canvas>
+    <div class="wrapper">
+	<canvas id="scaledCanvas" width="20" height="20" style="border:2px solid black"></canvas>
+	<canvas id="scaledTopLayerCanvas" width="200" height="200" style="border:2px solid black"></canvas>
+    </div>
+    <canvas id="pixelCanvas" width="28" height="28" style="border:2px solid black"></canvas>
+    <button id="clearBtn">Clear</button>
+    <span id="output"></span>
+    <canvas id="networkCanvas" width="1000" height="400" style="border:2px solid black"></canvas>
+</body>
+</html>
