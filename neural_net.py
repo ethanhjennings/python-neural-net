@@ -3,13 +3,16 @@ Implementation of a general purpose deep neural network.
 '''
 
 from itertools import islice
+import concurrent.futures
+import json
 import math
 import pickle
 import random
-import json
+import time
 
 import numpy as np
 
+np.seterr(all='raise')
 
 # Constants that can be tuned:
 
@@ -19,9 +22,8 @@ BATCH_SIZE = 32
 
 def random_init(rows, cols=None):
     if cols is not None:
-        spread = math.sqrt(2/(rows + cols))
-        print("Using weight spread: " + str(spread))
-        return np.random.normal(loc=0.0, scale=spread, size=(rows, cols))
+        spread = math.sqrt(1/cols)
+        return np.random.normal(loc=0, scale=spread, size=(rows, cols))
     else:
         return np.zeros(rows)
 
@@ -36,10 +38,24 @@ def d_sigmoid(data):
 
 def relu(data):
     # Rectifier Linear Unit (reLU)
-    return np.piecewise(data, [data <= 0, data > 0], [lambda x: 0.01*x, lambda x: x])
+    return np.piecewise(data, [data <= 0, (data > 0) & (data <= 1), data > 1], [lambda x: 0.01*x, lambda x: x, lambda x: 1])
+    #data[data <= 0] = 0
+    return data
 
 def d_relu(data):
-    return np.piecewise(data, [data <= 0, data > 0], [0.01, 1])
+    #return np.piecewise(data, [data <= 0, data > 0], [0.01, 1])
+    data[data <= 0] = 0.01
+    data[(data > 0) & (data <= 1)] = 1
+    data[data > 1] = 0
+    return data
+
+def elu(data):
+    alpha = 1
+    return np.piecewise(data, [data <= 0, data > 0], [lambda x: alpha*(np.exp(np.clip(x, -10, 10)) - 1), lambda x: x])
+
+def d_elu(data):
+    alpha = 1
+    return np.piecewise(data, [data <= 0, data > 0], [lambda x: alpha*np.exp(np.clip(x, -10, 10)), lambda x: 1])
 
 # Cost functions:
 def mean_squared_error(actual, expected):
@@ -63,11 +79,13 @@ class NeuralNetwork:
     def __init__(self, 
             layer_sizes,
             output_file,
-            learning_rate=0.5,
+            learning_rate=0.05,
             regularization_rate=0,
+            using_dropout=False,
+            dropout_prob=0.3,
             init_func=random_init,
-            act_func=sigmoid, 
-            act_func_deriv=d_sigmoid,
+            act_func=elu, 
+            act_func_deriv=d_elu,
             error_func=mean_squared_error,
             error_func_deriv=d_mean_squared_error):
 
@@ -75,6 +93,8 @@ class NeuralNetwork:
         self.output_file = output_file
         self.learning_rate = learning_rate
         self.regularization_rate = regularization_rate
+        self.using_dropout = using_dropout
+        self.dropout_prob = dropout_prob
         self.init_func = init_func
         self.act_func = act_func
         self.act_func_deriv = act_func_deriv
@@ -92,7 +112,7 @@ class NeuralNetwork:
         return weights
 
     def _gen_random_biases(self, layer_sizes):
-        return [self.init_func(size) for size in layer_sizes[1:]]
+        return [self.init_func(size, None) for size in layer_sizes[1:]]
 
     def _numerical_gradient(self, inputs, expected_outputs):
         # Estimate gradient using finite difference. It should be really
@@ -140,13 +160,30 @@ class NeuralNetwork:
 
         return gradient, bias_gradient, error
 
-    def _feedforward(self, inputs):
+    def _feedforward(self, inputs, dropout_mask=None):
         activations = [inputs]
+        #if dropout_mask is not None:
+        #    activations[0] *= dropout_mask[0]
+
         weighted_inputs = []
-        for weight_matrix, bias_vec in zip(self.weights, self.biases):
+        for i, (weight_matrix, bias_vec) in enumerate(zip(self.weights, self.biases)):            
             weighted_input = weight_matrix.dot(activations[-1]) + bias_vec
+            activation = self.act_func(weighted_input)
+            
+            # Apply dropout
+            if dropout_mask is not None:
+                activation *= dropout_mask[i+1]
+
             weighted_inputs.append(weighted_input)
-            activations.append(self.act_func(weighted_input))
+            activations.append(activation)
+
+        '''from matplotlib import pyplot as plt
+        for layer in self.weights:
+            layer = layer.flatten()
+            r = np.random.rand(*layer.shape)
+            plt.scatter(layer, r, s=0.01)
+            plt.show()'''
+
         return activations, weighted_inputs
 
     def _backpropogation(self, input_activations, expected_outputs):
@@ -155,31 +192,46 @@ class NeuralNetwork:
         weight_gradient = []
         bias_gradient = []
 
-        # Evaluate network normally in the forward direction
-        activations, weighted_inputs = self._feedforward(input_activations)
+        # Create randomized dropout mask with `dropout_prob` that any neuron
+        # is dropped and scale up surviving neurons accordingly
+        if self.using_dropout:
+            keep_prob = 1 - self.dropout_prob
+            dropout_mask = [(np.random.random(s) < keep_prob) / keep_prob 
+                    for s in self.layer_sizes]
+        else:
+            dropout_mask = None
 
-        # Compute overall network error
-        error = self.error_func(activations[-1], expected_outputs)
+        # Evaluate network normally in the forward direction
+        activations, weighted_inputs = self._feedforward(input_activations, dropout_mask)
+
+        #if show:
+        #    print(np.std(np.concatenate(activations).ravel()))
         
         last_idx = len(self.layer_sizes)-2
 
-
+        #if any([(w > 2).any() for w in self.weights]):
+        #    import pdb; pdb.set_trace()
         # Compute weight and bias gradients for each layer in reverse
         for i in range(last_idx, -1, -1):
-            if i == last_idx:
+            if i == last_idx: 
                 # Output layer
                 layer_errors = (self.error_func_deriv(activations[-1], expected_outputs) * 
                     self.act_func_deriv(weighted_inputs[-1]))
-            else:
+            else: 
                 # Input and hidden layers
                 layer_errors = (self.weights[i+1].transpose().dot(next_layer_errors) *
                     self.act_func_deriv(weighted_inputs[i]))
+
+                # Apply dropout
+                if self.using_dropout:
+                    layer_errors *= dropout_mask[i + 1]
                 
+            #layer_errors = np.clip(layer_errors, -1, 1)
             weight_gradient.insert(0, np.outer(layer_errors,activations[i]))
             bias_gradient.insert(0, layer_errors)
             next_layer_errors = layer_errors
 
-        return weight_gradient, bias_gradient, error
+        return weight_gradient, bias_gradient
 
     def run(self, inputs):
         ''' Evaluate this neural network for a single set of inputs
@@ -202,41 +254,63 @@ class NeuralNetwork:
 
         percent_corrects = []
 
-        for i in range(0, 300):
+        print("Training params:")
+        print("Activation function: " + self.act_func.__name__)
+        print("Layer sizes: " + str(self.layer_sizes))
+        print("Examples: " +str(len(training_examples)) + " train, " +  str(len(test_examples)) + " test")
+
+        for i in range(0, 1000):
+            print(str(min([g.min() for g in self.weights])) + "," + str(max([g.max() for g in self.weights])))
+            print(str(min([g.min() for g in self.biases])) + "," + str(max([g.max() for g in self.biases])))
             print("Saving progress to " + self.output_file + "." + str(i))
             pickle.dump(self, open(self.output_file + "." + str(i), 'wb'))
 
             print("Learning trial #" + str(i))
-            if i > 50:
-                self.learning_rate = 0.1
-            if i > 100:
+            self.dropout_prob -= 0.001
+            self.dropout_prob = max(self.dropout_prob, 0)
+            if i > 20:
                 self.learning_rate = 0.01
-            #if i > 9000:
-            #    self.learning_rate = 0.001
+            if i > 50:
+                self.learning_rate = 0.001
+            if i > 80:
+                self.learning_rate = 0.0001
             print("Learning rate: " + str(self.learning_rate) + " batch size: " + str(BATCH_SIZE))
+
+            '''guesses_and_answers = [(np.argmax(self.run(test_input)), np.argmax(test_label)) for test_input, test_label in training_examples]
+            num_correct = len([1 for guess, answer in guesses_and_answers if guess == answer])
+            total = len(training_examples)
+            print("Train: " + str(num_correct) + "/" + str(total) + " correct: " + str(num_correct/total))'''
 
             guesses_and_answers = [(np.argmax(self.run(test_input)), np.argmax(test_label)) for test_input, test_label in test_examples]
             num_correct = len([1 for guess, answer in guesses_and_answers if guess == answer])
             total = len(test_examples)
             print("Test: " + str(num_correct) + "/" + str(total) + " correct: " + str(num_correct/total))
 
+            start = time.time()
+
             # Break up training data into random batches of size BATCH_SIZE to save time when learning
             random.shuffle(training_examples)
             batches = [training_examples[i:i+int(BATCH_SIZE)] for i in range(0, len(training_examples), int(BATCH_SIZE))]
-            #batches = [islice(training_examples, BATCH_SIZE) for i in range(0, 1000000)]
+            #batches = [islice(training_examples, BATCH_SIZE) for i in range(0, 620)]
             
-            for batch in batches:
-                # Calculate gradient for this batch
-                results = [self._backpropogation(inputs, expected_outputs) for inputs, expected_outputs in batch]
+            with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+                for j, batch in enumerate(batches):
+                    #print(str(min([g.min() for g in self.weights])) + "," + str(max([g.max() for g in self.weights])))
+                    #print(str(min([g.min() for g in self.biases])) + "," + str(max([g.max() for g in self.biases])))
+                    # Calculate gradient for this batch
+                    results = list(executor.map(self._backpropogation, *zip(*batch)))
+                    #results = [self._backpropogation(inputs, expected_outputs, False) for inputs, expected_outputs in batch]
 
-                mean_weight_gradient      = np.mean([r[0] for r in results], axis=0) * self.learning_rate
-                mean_bias_gradient        = np.mean([r[1] for r in results], axis=0) * self.learning_rate
+                    mean_weight_gradient      = np.mean([r[0] for r in results], axis=0) * self.learning_rate
+                    mean_bias_gradient        = np.mean([r[1] for r in results], axis=0) * self.learning_rate
 
-                # Update weights and biases
-                regularization_factor = 1 - (self.learning_rate*self.regularization_rate)
-                self.weights = [weight_matrix*regularization_factor - grad for weight_matrix, grad in zip(self.weights, mean_weight_gradient)]
-                self.biases =  [bias_vec      - grad for bias_vec,      grad in zip(self.biases,  mean_bias_gradient)]
+                    # Update weights and biases
+                    #regularization_factor = 1 - (self.learning_rate*self.regularization_rate)
+                    self.weights = [weight_matrix - grad for weight_matrix, grad in zip(self.weights, mean_weight_gradient)]
+                    self.biases =  [bias_vec      - grad for bias_vec,      grad in zip(self.biases,  mean_bias_gradient)]
 
+            end = time.time()
+            print("Epoch took " + str(end-start) + "s")
         print("Finished learning!")
 
     def to_json(self):

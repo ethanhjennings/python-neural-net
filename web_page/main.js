@@ -96,7 +96,7 @@ function clearCalculatedBoxes() {
 }
 
 function draw_line(ctx, x1, y1, x2, y2) {
-    ctx.lineWidth = 14;
+    ctx.lineWidth = 10;
     ctx.lineJoin = "round";
     ctx.strokeStyle = "black";
 
