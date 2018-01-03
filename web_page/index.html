@@ -4,10 +4,32 @@
     <script type="text/javascript" src="neural_network.js"></script>
     <script type="text/javascript" src="main.js"></script>
     <style>
+    html {
+        display: table;
+        margin: auto;
+    }
+    body {
+	display: table-cell;
+    }
     .wrapper {
         position: relative;
 	z-index:100;
         display: inline-block;
+    }
+    #drawingCanvas {
+	display: inline-block;
+        position: relative;
+	top: 0;
+	left: 0;
+        width: 200;
+        height: 200;
+        z-index: -6;
+    }
+    #clearBtn {
+        position: absolute;
+	left: 5;
+	top: 5;
+    	z-index: -5;
     }
     #pixelCanvas {
         width: 200;
@@ -26,25 +48,37 @@
     #scaledTopLayerCanvas {
         z-index: -5;
     }
-    .canvas {
-        position: absolute;
-	top: 0;
-	left: 0;
+    #output {
+    	font-size: 30px;
+    }
+    #networkCanvas {
+        display: block;
+        width: 666px;
+        height: 400px;
+        padding: 0;
+        margin: auto;
+        display: block;
     }
     </style>
 </head>
 <body>
-    <span id="target"></span>
-    <button id="ok">Ok</button>
-    <canvas id="drawingCanvas" width="200" height="200" style="border:2px solid black"></canvas>
-    <canvas id="boundingCanvas" width="200" height="200" style="border:2px solid black"></canvas>
+    <div class="wrapper">
+	<canvas id="drawingCanvas" width="200" height="200" style="border:2px solid black"></canvas>
+	<button id="clearBtn">Clear</button>
+    </div>
+    <div class="wrapper">
+	<canvas id="boundingCanvas" width="200" height="200" style="border:2px solid black"></canvas>
+    </div>
     <div class="wrapper">
 	<canvas id="scaledCanvas" width="20" height="20" style="border:2px solid black"></canvas>
 	<canvas id="scaledTopLayerCanvas" width="200" height="200" style="border:2px solid black"></canvas>
     </div>
-    <canvas id="pixelCanvas" width="28" height="28" style="border:2px solid black"></canvas>
-    <button id="clearBtn">Clear</button>
-    <span id="output"></span>
-    <canvas id="networkCanvas" width="1000" height="400" style="border:2px solid black"></canvas>
+    <div class="wrapper">
+        <canvas id="pixelCanvas" width="28" height="28" style="border:2px solid black"></canvas>
+    </div>
+    <div style="text-align: center">
+    <canvas id="networkCanvas" width="1000" height="600" style="border:2px solid black"></canvas>
+    <span id="output">Guess: ?</span>
+    </div>
 </body>
 </html>

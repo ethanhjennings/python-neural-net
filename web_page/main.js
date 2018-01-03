@@ -1,3 +1,5 @@
+// This code was written quickly and is crappy so please don't look to hard at it.
+
 var mouseDown = false;
 var prevX, prevY;
 
@@ -36,7 +38,14 @@ $(document).ready(function() {
     networkCanvas = $("#networkCanvas")[0];
     networkCtx = networkCanvas.getContext("2d");
 
+    var drawHereTextShowing = true;
+    drawHereText(drawingCanvas, drawingCtx);
+
     $('#drawingCanvas').mousedown(function(e) {
+	if (drawHereTextShowing) {
+            drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+	    drawHereTextShowing = false;
+	}
         mouseDown = true;
 	x = e.pageX - $(this).offset().left;
 	y = e.pageY - $(this).offset().top;
@@ -87,6 +96,12 @@ $(document).ready(function() {
     });
 });
 
+function drawHereText(canvas, ctx) {
+    ctx.font = "18px Arial";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+    ctx.fillText("Draw a digit here",30,100);
+}
+
 function clearCalculatedBoxes() {
     boundingCtx.clearRect(0, 0, boundingCanvas.width, boundingCanvas.height);
     scaledCtx.clearRect(0, 0, scaledCanvas.width, scaledCanvas.height);
@@ -96,7 +111,7 @@ function clearCalculatedBoxes() {
 }
 
 function draw_line(ctx, x1, y1, x2, y2) {
-    ctx.lineWidth = 10;
+    ctx.lineWidth = 20;
     ctx.lineJoin = "round";
     ctx.strokeStyle = "black";
 
@@ -143,13 +158,16 @@ Number.prototype.clamp = function(min, max) {
   return Math.min(Math.max(this, min), max);
 };
 
+function draw_synapses(ctx) {
+    
+}
+
 function draw_synapse(ctx, x1, y1, x2, y2, magnitude) {
-    var alpha = Math.abs(magnitude*0.2).clamp(0, 1);
-    if (alpha < 0.05) returndraw_synapse(ctx, x1, y1, x2, y2, color);
+    var alpha = Math.abs(magnitude*0.4).clamp(0, 1);
+    if (alpha <= 0.05) return;
 	   
     var clamped = (magnitude*2).clamp(-1, 1);
     ctx.lineWidth = alpha*3;
-    ctx.lineJoin = "round";
     if (clamped < 0)
         ctx.strokeStyle = rgba(0, 0, 0, alpha);
     else
@@ -212,7 +230,6 @@ function normalize_and_visualize_input() {
     data = data.filter(function(val, idx) {
         return idx % 4 == 3; // Only using alpha channel
     });
-    console.log(data.toString());
     return data.map(function(val, idx) {
 	return val / 255.0;
     });
@@ -239,10 +256,71 @@ function get_center_of_mass(canvas, ctx) {
 	    y: sumY/sumW};
 }
 
+function draw_network(canvas, ctx, activations, weights, neuron_heights) {
+
+    var startX = 90;
+    var neuron_width = 80;
+    var neuron_spacing = 240;
+    for (var i = 0; i < activations.length; i++) {
+        // Calcualate average synapse activation for this layer
+        var avgAct = 0;
+        if (i > 0) {
+            var totalPos = 0;
+            for (var j = 0; j < activations[i].length; j++) {
+                for (var k = 0; k < activations[i-1].length; k++) {
+                    var activation = activations[i-1][k]*weights[i-1][j][k];
+                    avgAct += activation;
+                    //maxAct = Math.max(maxAct, Math.abs(activation));
+                }
+            }
+            avgAct = 100*avgAct/(activations[i-1].length*activations[i].length);
+        }
+        
+    	for (var j = 0; j < activations[i].length; j++) {
+            var startY = (600-activations[i].length*neuron_heights[i])/2;
+
+            // Draw neuron activation
+            ctx.fillStyle = rgba(0, 255*activations[i][j], 255*activations[i][j], 1);
+            ctx.fillRect(startX + i*neuron_spacing, startY+j*neuron_heights[i], neuron_width, neuron_heights[i]);
+
+            // Draw input synapses
+            if (i > 0) {
+                ctx.lineJoin = "round";
+                var prevStartY = (600-activations[i-1].length*neuron_heights[i-1])/2;
+                ctx.beginPath();
+                for (var k = 0; k < activations[i-1].length; k++) {
+                    var activation = activations[i-1][k]*weights[i-1][j][k];
+
+                    var beginX = startX + (i-1)*neuron_spacing + neuron_width;
+                    var beginY = prevStartY + neuron_heights[i-1]*(k+0.5);
+                    var endX = startX + i*neuron_spacing;
+                    var endY = startY + neuron_heights[i]*(j+0.5);
+                    draw_synapse(ctx, beginX, beginY, endX, endY, 2*activation);
+                }
+                ctx.stroke();
+            }
+	    }
+    }
+    // Draw labels
+    ctx.font = "25px Arial";
+    ctx.fillStyle = "rgba(0, 0, 0, 1)";
+    
+    var startY = (600-activations[3].length*neuron_heights[3])/2;
+    for (i = 0; i < 10; i++) {
+        ctx.fillText(i.toString(), 905, startY + neuron_heights[3]/2 + i*neuron_heights[3] + 8);
+    }
+
+    ctx.fillText("pixel",          20,  300);
+    ctx.fillText("inputs",         15,  330);
+    ctx.fillText("hidden layer 1", 300, 560);
+    ctx.fillText("hidden layer 2", 540, 560);
+    ctx.fillText("output",         815, 482);
+}
+
 function run_network() {
-    pixels = normalize_and_visualize_input();
-    results = evaluate_network(pixels);
-    result = argmax(activations[3]);
-    $("#output").text(result);
-    //draw_network(networkCanvas, networkCtx, results.activations, network.weights, [0.75, 25, 25, 25]);
+    var pixels = normalize_and_visualize_input();
+    var activations = evaluate_network(pixels);
+    var result = argmax(activations[3]);
+    $("#output").text("Guess: " + result);
+    draw_network(networkCanvas, networkCtx, activations, network.weights, [0.7, 1.8, 1.8, 30]);
 }

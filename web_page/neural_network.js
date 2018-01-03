@@ -23,9 +23,9 @@ function add(vec1, vec2) {
     return vec1;
 }
 
-function sigmoid(vec) {
+function relu(vec) {
     for (var i = 0; i < vec.length; i++) {
-    	vec[i] = 1.0 / (1.0 + Math.exp(-1.0 * vec[i]));
+    	vec[i] = Math.max(vec[i], 0);
     }
     return vec;
 }
@@ -36,16 +36,14 @@ function argmax(vec) {
 
 function feed_forward(inputs) {
     activations = [inputs];
-    weighted_inputs = [];
     for (var i = 0; i < network.weights.length; i++) {
 	var weights = network.weights[i];
 	var biases = network.biases[i];
 	var layer_input = add(dot(weights, activations[i]), biases);
-        var layer_activations = sigmoid(layer_input);
+        var layer_activations = relu(layer_input);
 	activations.push(layer_activations);
-	weighted_inputs.push(layer_input);
     }
-    return {activations: activations, weighted_inputs: weighted_inputs};
+    return activations;
 }
 
 function evaluate_network(inputs) {
