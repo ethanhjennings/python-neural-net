@@ -14,7 +14,6 @@ from neural_net import NeuralNetwork
 IMAGE_WIDTH = 28
 IMAGE_HEIGHT = 28
 PIXEL_COUNT = IMAGE_WIDTH * IMAGE_HEIGHT
-HIDDEN_LAYER_SIZE=16
 
 NUM_CHARACTERS = 10 # representing 10 digits
 
@@ -22,7 +21,6 @@ def convolution(matrix, kernel):
     w, h = kernel.shape[0], kernel.shape[1]
     copy = np.pad(matrix, ((w//2, w//2),(h//2, h//2)), mode='constant')
 
-    #import pdb; pdb.set_trace()
     for (r, c), val in np.ndenumerate(matrix):
         matrix[r, c] = np.sum(copy[r:r+w, c:c+h] * kernel)
 
@@ -55,11 +53,6 @@ def flow_field(data):
 def random_transformation(data):
     data = data.reshape((28, 28))
 
-    #from matplotlib import pyplot as plt
-    #plt.imshow(data)
-    #plt.show()
-    
-    #data = flow_field(data)
     w = data.shape[0]/2
     
     rotation = random.uniform(-0.6, 0.6)
@@ -79,8 +72,6 @@ def random_transformation(data):
 
     
     data = transform.warp(data, t0.dot(s.dot(sr.dot(sh.dot(r0.dot(t2))))))
-    #plt.imshow(data)
-    #plt.show()
     return data.reshape((784,))
 
 def args():
@@ -88,6 +79,7 @@ def args():
     parser.add_argument('mnist_path', help='Path for gzipped mnist training/test set pickle.')
     parser.add_argument('output_path', default='output.pkl', help='Path to save output pickle.')
     parser.add_argument('--activation', default='relu', help='Activation function to use, can be either sigmoid or relu')
+    parser.add_argument('--hl-sizes', default='128x128', help="Sizes of the hidden layers  delimited by 'x'. Example: 128x128x128")
     return parser.parse_args()
 
 def data_to_image(data):
@@ -107,27 +99,17 @@ def transform_examples(data):
 def training_generator(base_examples):
     while True:
         example = random.choice(base_examples)
-        if random.random() < 0.1:
+        if random.random() < 0.05:
             yield example
         else:
             yield (random_transformation(example[0]), example[1])
 
-def main(mnist_path, output_path, activation):
+def main(mnist_path, output_path, activation, hl_sizes):
     f = gzip.open(mnist_path, 'rb')
     training_set, test_set = pickle.load(f, encoding='latin1')
  
     training_examples = transform_examples(training_set)
     test_examples = transform_examples(test_set)
-
-    print("Creating new training data")
-    generated_training_examples = []
-    for i in range(2500000):
-        example = random.choice(training_examples)
-        example = (random_transformation(example[0]), example[1])
-        generated_training_examples.append(example)
-    print(len(generated_training_examples))
-    training_examples += generated_training_examples
-    print(len(training_examples))
 
     if activation == "sigmoid":
         activation = neural_net.sigmoid
@@ -139,12 +121,12 @@ def main(mnist_path, output_path, activation):
         activation = neural_net.elu
         d_activation = neural_net.d_elu
 
-
-    network = NeuralNetwork([PIXEL_COUNT, 256, 256, NUM_CHARACTERS], output_path, act_func=activation, act_func_deriv=d_activation)
-    network.train(training_examples, test_examples)
+    network = NeuralNetwork([PIXEL_COUNT] + hl_sizes + [NUM_CHARACTERS], output_path, act_func=activation, act_func_deriv=d_activation)
+    network.train(training_generator(training_examples), test_examples)
 
     pickle.dump(network, open(output_path, 'wb'))
 
 if __name__ == "__main__":
     args = args()
-    main(args.mnist_path, args.output_path, args.activation)
+    hl_sizes = [int(s) for s in args.hl_sizes.split('x')]
+    main(args.mnist_path, args.output_path, args.activation, hl_sizes)
