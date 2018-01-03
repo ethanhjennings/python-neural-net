@@ -9,40 +9,47 @@
         margin: auto;
     }
     body {
-	display: table-cell;
+	    display: table-cell;
+        background: #eeeeee;
     }
     .wrapper {
         position: relative;
-	z-index:100;
+	    z-index:100;
         display: inline-block;
+        margin-top: 15px;
+        margin-left: 5px;
+        margin-right: 5px;
+    }
+    .digitCanvas {
+        background: white;
     }
     #drawingCanvas {
-	display: inline-block;
+	    display: inline-block;
         position: relative;
-	top: 0;
-	left: 0;
+	    top: 0;
+	    left: 0;
         width: 200;
         height: 200;
         z-index: -6;
     }
     #clearBtn {
         position: absolute;
-	left: 5;
-	top: 5;
+	    left: 5;
+	    top: 5;
     	z-index: -5;
     }
     #pixelCanvas {
         width: 200;
         height: 200;
-	image-rendering: pixelated;
+	    image-rendering: pixelated;
     }
     #scaledCanvas {
         position: absolute;
-	top: 0;
-	left: 0;
+	    top: 0;
+	    left: 0;
         width: 200;
         height: 200;
-	image-rendering: pixelated;
+	    image-rendering: pixelated;
         z-index: -6;
     }
     #scaledTopLayerCanvas {
@@ -63,21 +70,21 @@
 </head>
 <body>
     <div class="wrapper">
-	<canvas id="drawingCanvas" width="200" height="200" style="border:2px solid black"></canvas>
+	<canvas id="drawingCanvas" class="digitCanvas" width="200" height="200"></canvas>
 	<button id="clearBtn">Clear</button>
     </div>
     <div class="wrapper">
-	<canvas id="boundingCanvas" width="200" height="200" style="border:2px solid black"></canvas>
+	<canvas id="boundingCanvas" class="digitCanvas" width="200" height="200"></canvas>
     </div>
     <div class="wrapper">
-	<canvas id="scaledCanvas" width="20" height="20" style="border:2px solid black"></canvas>
-	<canvas id="scaledTopLayerCanvas" width="200" height="200" style="border:2px solid black"></canvas>
+	<canvas id="scaledCanvas" class="digitCanvas" width="20" height="20"></canvas>
+	<canvas id="scaledTopLayerCanvas" width="200" height="200"></canvas>
     </div>
     <div class="wrapper">
-        <canvas id="pixelCanvas" width="28" height="28" style="border:2px solid black"></canvas>
+        <canvas id="pixelCanvas" class="digitCanvas" width="28" height="28"></canvas>
     </div>
     <div style="text-align: center">
-    <canvas id="networkCanvas" width="1000" height="600" style="border:2px solid black"></canvas>
+    <canvas id="networkCanvas" width="1000" height="600"></canvas>
     <span id="output">Guess: ?</span>
     </div>
 </body>

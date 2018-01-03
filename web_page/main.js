@@ -42,31 +42,32 @@ $(document).ready(function() {
     drawHereText(drawingCanvas, drawingCtx);
 
     $('#drawingCanvas').mousedown(function(e) {
-	if (drawHereTextShowing) {
+        if (drawHereTextShowing) {
             drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-	    drawHereTextShowing = false;
-	}
+            drawHereTextShowing = false;
+        }
         mouseDown = true;
-	x = e.pageX - $(this).offset().left;
-	y = e.pageY - $(this).offset().top;
-	// use small delta to force canvas to draw a dot
-	draw_line(drawingCtx, x-0.01, y-0.01, x+0.01, y+0.01);
-	prevX = x; prevY = y;
+        x = e.pageX - $(this).offset().left;
+        y = e.pageY - $(this).offset().top;
+        // use small delta to force canvas to draw a dot
+        draw_line(drawingCtx, x-0.01, y-0.01, x+0.01, y+0.01);
+        prevX = x; prevY = y;
     });
 
     $('#drawingCanvas').mousemove(function(e) {
-	if (mouseDown) {
-	    clearCalculatedBoxes();
-            run_network();
-	    x = e.pageX - $(this).offset().left;
-	    y = e.pageY - $(this).offset().top;
-	    draw_line(drawingCtx, prevX, prevY, x, y);
-            prevX = x; prevY = y;
-	}
+        if (mouseDown) {
+            clearCalculatedBoxes();
+            run_network(false);
+            x = e.pageX - $(this).offset().left;
+            y = e.pageY - $(this).offset().top;
+            draw_line(drawingCtx, prevX, prevY, x, y);
+                prevX = x; prevY = y;
+        }
     });
 
     $('#drawingCanvas').mouseup(function(e) {
         mouseDown = false;
+        run_network(true);
     });
 
     $('#drawingCanvas').mouseleave(function(e) {
@@ -103,6 +104,7 @@ function drawHereText(canvas, ctx) {
 }
 
 function clearCalculatedBoxes() {
+    $("#output").text("Guess: ?");
     boundingCtx.clearRect(0, 0, boundingCanvas.width, boundingCanvas.height);
     scaledCtx.clearRect(0, 0, scaledCanvas.width, scaledCanvas.height);
     scaledTLCtx.clearRect(0, 0, scaledTLCanvas.width, scaledTLCanvas.height);
@@ -163,8 +165,8 @@ function draw_synapses(ctx) {
 }
 
 function draw_synapse(ctx, x1, y1, x2, y2, magnitude) {
-    var alpha = Math.abs(magnitude*0.4).clamp(0, 1);
-    if (alpha <= 0.05) return;
+    var alpha = Math.abs(magnitude*0.3).clamp(0, 1);
+    //if (alpha <= 0.05) return;
 	   
     var clamped = (magnitude*2).clamp(-1, 1);
     ctx.lineWidth = alpha*3;
@@ -256,7 +258,7 @@ function get_center_of_mass(canvas, ctx) {
 	    y: sumY/sumW};
 }
 
-function draw_network(canvas, ctx, activations, weights, neuron_heights) {
+function draw_network(canvas, ctx, activations, weights, neuron_heights, drawingSynapses=true) {
 
     var startX = 90;
     var neuron_width = 80;
@@ -264,7 +266,7 @@ function draw_network(canvas, ctx, activations, weights, neuron_heights) {
     for (var i = 0; i < activations.length; i++) {
         // Calcualate average synapse activation for this layer
         var avgAct = 0;
-        if (i > 0) {
+        if (i > 0 && drawingSynapses) {
             var totalPos = 0;
             for (var j = 0; j < activations[i].length; j++) {
                 for (var k = 0; k < activations[i-1].length; k++) {
@@ -284,7 +286,7 @@ function draw_network(canvas, ctx, activations, weights, neuron_heights) {
             ctx.fillRect(startX + i*neuron_spacing, startY+j*neuron_heights[i], neuron_width, neuron_heights[i]);
 
             // Draw input synapses
-            if (i > 0) {
+            if (i > 0 && drawingSynapses) {
                 ctx.lineJoin = "round";
                 var prevStartY = (600-activations[i-1].length*neuron_heights[i-1])/2;
                 ctx.beginPath();
@@ -317,10 +319,10 @@ function draw_network(canvas, ctx, activations, weights, neuron_heights) {
     ctx.fillText("output",         815, 482);
 }
 
-function run_network() {
+function run_network(drawingSynapses) {
     var pixels = normalize_and_visualize_input();
     var activations = evaluate_network(pixels);
     var result = argmax(activations[3]);
     $("#output").text("Guess: " + result);
-    draw_network(networkCanvas, networkCtx, activations, network.weights, [0.7, 1.8, 1.8, 30]);
+    draw_network(networkCanvas, networkCtx, activations, network.weights, [0.7, 1.8, 1.8, 30], drawingSynapses);
 }
