@@ -11,7 +11,7 @@
     body {
 	    display: table-cell;
         background: #eeeeee;
-        font-family: monospace;
+        font-family: arial;
     }
     p {
         width: 800px;
@@ -70,6 +70,11 @@
         margin: auto;
         display: block;
     }
+
+    .keySpan {
+        padding-left: 40px; 
+        margin-right: 10px;
+    }
     </style>
 </head>
 <body>
@@ -91,20 +96,44 @@
     <canvas id="networkCanvas" width="1000" height="600"></canvas>
     <span id="output">Guess: ?</span>
     </div>
+    <div style="text-align: center; margin-top:40px; margin-bottom:0px;">
+    <b>key:</b>
+    <table style="margin: 0 auto;">
+        <th>
+            <td colspan=2><b>neurons</b></td>
+            <td colspan=2><b>synapses</b></td>
+        </th>
+        <tr>
+            <td><span class="keySpan" style="background-color:#00ffff;"></span></td>
+            <td>strong activation</td>
+            <td><span class="keySpan" style="background-color:#00ffff;"></span></td>
+            <td>positive activation</td>
+        </tr>
+        <tr>
+            <td><span class="keySpan" style="background-color:#000000;"></span></td>
+            <td>zero activation</td>
+            <td><span class="keySpan" style="background-color:#000000;"></span></td>
+            <td>negative activation</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td><span style="background-color:#dddddd;">&lt;opacity&gt;</td>
+            <td>activation strength</td>
+        </tr>
+    </table>
+    </div>
     <h2>About:</h2>
+    <p>
+       
+    </p>
     <p>This is a visuzaliztion of a  vanilla feedforward nueral network that classifies handwritten digits.
     The four white boxes on top illustrate the process of normalizing the images.
     The pixel values of the normalzed image on the right are fed directly as input neurons into the neural network.
-    <p>Neurons are organized into layers and drawn vertically as thin lines or rectangles, and synapses  as connecting lines using these colors:</p>
-    <ul>
-        <li>Cyan neuron = strong activation</li>
-        <li>Black neuron = weak or zero activation</li>
-        <li>Cyan synapse = </li>
-        <li>Black neuron = weak or zero activation</li>
-    
+    <p>Neurons are organized into layers and drawn vertically as thin lines or rectangles, and synapses  as connecting lines using the key above.</p>
     
     </p>
-    <a href="">View more info and source code on github.</a>
+    <a href="https://github.com/ethanhjennings/python-neural-net">View more info and source code on github.</a>
     
 </body>
 </html>

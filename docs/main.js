@@ -1,4 +1,4 @@
-// This code was written quickly and is crappy so please don't look to hard at it.
+// This code is crappy so please don't look to hard at it. :(
 
 var mouseDown = false;
 var prevX, prevY;
@@ -98,7 +98,7 @@ $(document).ready(function() {
 });
 
 function drawHereText(canvas, ctx) {
-    ctx.font = "18px monospace";
+    ctx.font = "18px arial";
     ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
     ctx.fillText("Draw a digit here",30,100);
 }
@@ -151,22 +151,12 @@ function rgba(r, g, b, a){
   return "rgba(" + Math.floor(r) + "," + Math.floor(g) + "," + Math.floor(b) + "," + a + ")";
 }
 
-function draw_neuron(ctx, x, y, width, height, activation) {
-    ctx.fillStyle = rgba(0, activation*255, activation*255, 1.0);
-    ctx.fillRect(x, y, width, height);
-}
-
 Number.prototype.clamp = function(min, max) {
   return Math.min(Math.max(this, min), max);
 };
 
-function draw_synapses(ctx) {
-    
-}
-
 function draw_synapse(ctx, x1, y1, x2, y2, magnitude) {
     var alpha = Math.abs(magnitude*0.3).clamp(0, 1);
-    //if (alpha <= 0.05) return;
 	   
     var clamped = (magnitude*2).clamp(-1, 1);
     ctx.lineWidth = alpha*3;
@@ -282,7 +272,8 @@ function draw_network(canvas, ctx, activations, weights, neuron_heights, drawing
             var startY = (600-activations[i].length*neuron_heights[i])/2;
 
             // Draw neuron activation
-            ctx.fillStyle = rgba(0, 255*activations[i][j], 255*activations[i][j], 1);
+            var a = activations[i][j];
+            ctx.fillStyle = rgba(0, 255*a, 255*a, 1);
             ctx.fillRect(startX + i*neuron_spacing, startY+j*neuron_heights[i], neuron_width, neuron_heights[i]);
 
             // Draw input synapses
