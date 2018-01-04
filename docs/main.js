@@ -98,7 +98,7 @@ $(document).ready(function() {
 });
 
 function drawHereText(canvas, ctx) {
-    ctx.font = "18px Arial";
+    ctx.font = "18px monospace";
     ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
     ctx.fillText("Draw a digit here",30,100);
 }
