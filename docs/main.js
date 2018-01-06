@@ -41,7 +41,7 @@ $(document).ready(function() {
     var drawHereTextShowing = true;
     drawHereText(drawingCanvas, drawingCtx);
 
-    $('#drawingCanvas').mousedown(function(e) {
+    $('#drawingCanvas').bind('touchstart mousedown', function(e) {
         if (drawHereTextShowing) {
             drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
             drawHereTextShowing = false;
@@ -54,7 +54,8 @@ $(document).ready(function() {
         prevX = x; prevY = y;
     });
 
-    $('#drawingCanvas').mousemove(function(e) {
+    $('#drawingCanvas').bind('touchmove mousemove', function(e) {
+        console.log(e);
         if (mouseDown) {
             clearCalculatedBoxes();
             run_network(false);
@@ -63,9 +64,10 @@ $(document).ready(function() {
             draw_line(drawingCtx, prevX, prevY, x, y);
                 prevX = x; prevY = y;
         }
+        e.preventDefault();
     });
 
-    $('#drawingCanvas').mouseup(function(e) {
+    $('#drawingCanvas').bind('touchend mouseup', function(e) {
         mouseDown = false;
         run_network(true);
     });

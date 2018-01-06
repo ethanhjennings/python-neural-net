@@ -127,10 +127,11 @@
     <p>
        
     </p>
-    <p>This is a visuzaliztion of a  vanilla feedforward nueral network that classifies handwritten digits.
-    The four white boxes on top illustrate the process of normalizing the images.
-    The pixel values of the normalzed image on the right are fed directly as input neurons into the neural network.
-    <p>Neurons are organized into layers and drawn vertically as thin lines or rectangles, and synapses  as connecting lines using the key above.</p>
+    <p>This is a visualization of a neural net that classifies human handwritten digits (0-9). Training was implemented in Python and classification in Javascript so it can run in-browser. It's a vanilla deep(ish) feedforward neural network whith two hidden layers of 256 nuerons. It was trained on the <a href="https://github.com/ethanhjennings/emnist-simplified">EMNIST</a> handwriten digits dataset.
+    </p>
+    <p>The four white boxes on top illustrate the process of normalizing the images. This consists of finding the bounding box and centroid, compressing the cropped image to 20x20 pixels, and finally centering the image on the centroid in a 28x28 pixel square. The pixels of the final normalized image on the right are then fed into the input layer, and the classification guess is chosen by picking the highest value in the output layer.
+    </p>
+    <p>In the visualization, neuron layers are drawn as vertical stacks of as thin rectangles, and synapses as connecting lines. These are colored and shaded according to the key above. The network as drawn on an HTML canvas using javascript.</p>
     
     </p>
     <a href="https://github.com/ethanhjennings/python-neural-net">View more info and source code on github.</a>
