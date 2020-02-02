@@ -1,3 +1,5 @@
+# Entry point for training. This script also generates augmented data with various transforms.
+
 import argparse
 import gzip
 import numpy as np
@@ -17,38 +19,6 @@ PIXEL_COUNT = IMAGE_WIDTH * IMAGE_HEIGHT
 
 NUM_CHARACTERS = 10 # representing 10 digits
 
-def convolution(matrix, kernel):
-    w, h = kernel.shape[0], kernel.shape[1]
-    copy = np.pad(matrix, ((w//2, w//2),(h//2, h//2)), mode='constant')
-
-    for (r, c), val in np.ndenumerate(matrix):
-        matrix[r, c] = np.sum(copy[r:r+w, c:c+h] * kernel)
-
-    return matrix
-    
-
-def flow_field(data):
-    copy = np.zeros((28, 28))
-
-    a = random.uniform(0, 2*math.pi)
-    b = random.uniform(0, 2*math.pi)
-    c = random.uniform(0, 2*math.pi)
-    d = random.uniform(0, 2*math.pi)
-    e = random.uniform(-0.3, 0.3)
-    f = random.uniform(-0.3, 0.3)
-    g = random.uniform(-0.3, 0.3)
-    h = random.uniform(-0.3, 0.3)
-    i = random.uniform(-8, 8)
-    j = random.uniform(-8, 8)
-
-    for x in range(28):
-        for y in range(28):
-            v_x = x + 2*math.cos(e*x + a)*math.sin(f*y + b)
-            v_y = y + 2*math.sin(g*x + c)*math.cos(h*y + d)
-            v_x = max(0, min(27, v_x))
-            v_y = max(0, min(27, v_y))
-            copy[y,x] = data[int(v_y), int(v_x)]
-    return copy
 
 def random_transformation(data):
     data = data.reshape((28, 28))
@@ -69,7 +39,6 @@ def random_transformation(data):
     sh =  transform.AffineTransform(shear=shear_amount).params
     r0 = transform.AffineTransform(rotation=-shear_rotation+rotation).params
     t2 = transform.AffineTransform(translation=(-w + trans_x, -w + trans_y)).params
-
     
     data = transform.warp(data, t0.dot(s.dot(sr.dot(sh.dot(r0.dot(t2))))))
     return data.reshape((784,))
