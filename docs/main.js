@@ -1,5 +1,4 @@
-// This code is crappy so please don't look to hard at it. :(
-
+'use strict';
 var mouseDown = false;
 var prevX, prevY;
 
@@ -7,69 +6,75 @@ var drawingCanvas;
 var drawingCtx;
 var boundingCanvas;
 var boundingCtx;
-var scaleCanvas;
+var scaledCanvas;
 var scaledCtx;
 var scaledTLCanvas;
 var scaledTLCtx;
 var pixelCanvas;
 var pixelCtx;
-
+var networkCanvas;
 var networkCtx;
-var petworkCanvas;
 
 var targetTime = 0;
 
-$(document).ready(function() {
-    drawingCanvas = $('#drawingCanvas')[0];
-    drawingCtx = drawingCanvas.getContext("2d");
+var timeout;
 
-    boundingCanvas = $("#boundingCanvas")[0];
-    boundingCtx = boundingCanvas.getContext("2d");
+window.addEventListener('DOMContentLoaded', () => {
+  drawingCanvas = document.getElementById('drawingCanvas');
+  drawingCtx = drawingCanvas.getContext("2d");
 
-    scaledCanvas = $("#scaledCanvas")[0];
-    scaledCtx = scaledCanvas.getContext("2d");
-	
-    scaledTLCanvas = $("#scaledTopLayerCanvas")[0];
-    scaledTLCtx = scaledTLCanvas.getContext("2d");
-	
-    pixelCanvas = $("#pixelCanvas")[0];
-    pixelCtx = pixelCanvas.getContext("2d");
-	
-    networkCanvas = $("#networkCanvas")[0];
-    networkCtx = networkCanvas.getContext("2d");
+  boundingCanvas = $("#boundingCanvas")[0];
+  boundingCtx = boundingCanvas.getContext("2d");
 
-    var drawHereTextShowing = true;
-    drawHereText(drawingCanvas, drawingCtx);
+  scaledCanvas = $("#scaledCanvas")[0];
+  scaledCtx = scaledCanvas.getContext("2d");
 
-    $('#drawingCanvas').bind('touchstart mousedown', function(e) {
-        if (drawHereTextShowing) {
-            drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-            drawHereTextShowing = false;
-        }
-        mouseDown = true;
-        x = e.pageX - $(this).offset().left;
-        y = e.pageY - $(this).offset().top;
-        // use small delta to force canvas to draw a dot
-        draw_line(drawingCtx, x-0.01, y-0.01, x+0.01, y+0.01);
-        prevX = x; prevY = y;
-    });
+  scaledTLCanvas = $("#scaledTopLayerCanvas")[0];
+  scaledTLCtx = scaledTLCanvas.getContext("2d");
 
-    $('#drawingCanvas').bind('touchmove mousemove', function(e) {
-        console.log(e);
+  pixelCanvas = $("#pixelCanvas")[0];
+  pixelCtx = pixelCanvas.getContext("2d");
+
+  networkCanvas = $("#networkCanvas")[0];
+  networkCtx = networkCanvas.getContext("2d");
+
+  var drawHereTextShowing = true;
+  drawHereText(drawingCanvas, drawingCtx);
+
+  $('#drawingCanvas').bind('pointerdown', function(e) {
+    if (drawHereTextShowing) {
+        drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+        drawHereTextShowing = false;
+    }
+    mouseDown = true;
+    let x = e.pageX - $(this).offset().left;
+    let y = e.pageY - $(this).offset().top;
+    // use small delta to force canvas to draw a dot
+    draw_line(drawingCtx, x-0.01, y-0.01, x+0.01, y+0.01);
+    prevX = x; prevY = y;
+  });
+
+    $('#drawingCanvas').bind('pointermove', function(e) {
         if (mouseDown) {
+            /*if (typeof timout !== 'undefined') {
+              clearTimeout(timeout);
+            }*/
+            //timeout = setTimeout(function() {run_network();}, 500);
             clearCalculatedBoxes();
-            run_network(false);
-            x = e.pageX - $(this).offset().left;
-            y = e.pageY - $(this).offset().top;
+            run_network(0.3);
+            let x = e.pageX - $(this).offset().left;
+            let y = e.pageY - $(this).offset().top;
             draw_line(drawingCtx, prevX, prevY, x, y);
                 prevX = x; prevY = y;
         }
         e.preventDefault();
     });
 
-    $('#drawingCanvas').bind('touchend mouseup', function(e) {
+    $('#drawingCanvas').bind('touchend mouseup pointerup', function(e) {
+      if (mouseDown) {
         mouseDown = false;
-        run_network(true);
+        run_network();
+      }
     });
 
     $('#drawingCanvas').mouseleave(function(e) {
@@ -79,23 +84,6 @@ $(document).ready(function() {
     $('#clearBtn').click(function() {
         drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
         clearCalculatedBoxes();
-    });
-
-    $('#ok').click(function() {
-        drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-        clearCalculatedBoxes();
-	var angle = 2*Math.PI*Math.random();
-	var x = Math.random()*50+75;
-	var y = Math.random()*50+75;
-	for (var i = 0; i < 5000; i++) {
-	    angle += 0.001*(2*Math.random()-1);
-	    if (Math.random() > 0.9) {
-	        angle = 2*Math.random();
-	    }
-            x += 1*Math.cos(angle);
-	    y += 1*Math.sin(angle);
-	    draw_line(drawingCtx, x, y, x+0.01, y+0.01);
-	}
     });
 });
 
@@ -185,24 +173,24 @@ function get_crop_bounds(canvas, ctx) {
          for (var x = 0; x < width; x++) {
              var i = (y*width + x)*stride + 3;
              if (data[i] !== 0) { // only checking alpha channel
-	         bounds.left = Math.min(bounds.left, x);
-	         bounds.right = Math.max(bounds.right, x);
-	         bounds.top = Math.min(bounds.top, y);
-	         bounds.bottom = Math.max(bounds.bottom, y);
-	     }
-	 }
+           bounds.left = Math.min(bounds.left, x);
+           bounds.right = Math.max(bounds.right, x);
+           bounds.top = Math.min(bounds.top, y);
+           bounds.bottom = Math.max(bounds.bottom, y);
+       }
+   }
      }
 
      bounds = {left: bounds.left, top: bounds.top,
-	       width: bounds.right - bounds.left,
-	       height: bounds.bottom - bounds.top};
+         width: bounds.right - bounds.left,
+         height: bounds.bottom - bounds.top};
 
      if (bounds.height > bounds.width) {
-	bounds.left -= (bounds.height-bounds.width)/2;
-     	bounds.width = bounds.height;
+  bounds.left -= (bounds.height-bounds.width)/2;
+      bounds.width = bounds.height;
      } else {
-	bounds.top -= (bounds.width-bounds.height)/2;
-     	bounds.height = bounds.width;
+  bounds.top -= (bounds.width-bounds.height)/2;
+      bounds.height = bounds.width;
      }
 
      return bounds;
@@ -210,22 +198,22 @@ function get_crop_bounds(canvas, ctx) {
 
 function normalize_and_visualize_input() {
     clearCalculatedBoxes();
-    var bounds = get_crop_bounds(drawingCanvas, drawingCtx);
+    let bounds = get_crop_bounds(drawingCanvas, drawingCtx);
     boundingCtx.drawImage(drawingCanvas, 0, 0);
     draw_bounding_box(boundingCtx, bounds);
     scaledCtx.drawImage(drawingCanvas, bounds.left, bounds.top, bounds.width, bounds.height, 0, 0, 20, 20);
-    centroid = get_center_of_mass(scaledCanvas, scaledCtx);
+    let centroid = get_center_of_mass(scaledCanvas, scaledCtx);
     draw_crosshair(scaledTLCtx, centroid.x*200/20, centroid.y*200/20, 10);
     
     pixelCtx.drawImage(scaledCanvas, 0, 0, 20, 20, 14-centroid.x, 14-centroid.y, 20, 20);
     
     // extract pixel data
-    var data = Array.prototype.slice.call(pixelCtx.getImageData(0, 0, 28, 28).data);
+    let data = Array.prototype.slice.call(pixelCtx.getImageData(0, 0, 28, 28).data);
     data = data.filter(function(val, idx) {
         return idx % 4 == 3; // Only using alpha channel
     });
     return data.map(function(val, idx) {
-	return val / 255.0;
+  return val / 255.0;
     });
 }
 
@@ -241,36 +229,23 @@ function get_center_of_mass(canvas, ctx) {
     for (var y = 0; y < height; y++) {
         for (var x = 0; x < width; x++) {
             var i = (y*width + x)*stride + 3;
-	    sumX += data[i]*x;
-	    sumY += data[i]*y;
-	    sumW += data[i];
-	}
+      sumX += data[i]*x;
+      sumY += data[i]*y;
+      sumW += data[i];
+  }
     }
     return {x: sumX/sumW,
-	    y: sumY/sumW};
+      y: sumY/sumW};
 }
 
-function draw_network(canvas, ctx, activations, weights, neuron_heights, drawingSynapses=true) {
+function draw_network(canvas, ctx, activations, weights, neuron_heights, synapse_epsilon=0.0) {
 
     var startX = 90;
     var neuron_width = 80;
     var neuron_spacing = 240;
     for (var i = 0; i < activations.length; i++) {
-        // Calcualate average synapse activation for this layer
-        var avgAct = 0;
-        if (i > 0 && drawingSynapses) {
-            var totalPos = 0;
-            for (var j = 0; j < activations[i].length; j++) {
-                for (var k = 0; k < activations[i-1].length; k++) {
-                    var activation = activations[i-1][k]*weights[i-1][j][k];
-                    avgAct += activation;
-                    //maxAct = Math.max(maxAct, Math.abs(activation));
-                }
-            }
-            avgAct = 100*avgAct/(activations[i-1].length*activations[i].length);
-        }
         
-    	for (var j = 0; j < activations[i].length; j++) {
+      for (var j = 0; j < activations[i].length; j++) {
             var startY = (600-activations[i].length*neuron_heights[i])/2;
 
             // Draw neuron activation
@@ -279,10 +254,9 @@ function draw_network(canvas, ctx, activations, weights, neuron_heights, drawing
             ctx.fillRect(startX + i*neuron_spacing, startY+j*neuron_heights[i], neuron_width, neuron_heights[i]);
 
             // Draw input synapses
-            if (i > 0 && drawingSynapses) {
+            if (i > 0) {
                 ctx.lineJoin = "round";
                 var prevStartY = (600-activations[i-1].length*neuron_heights[i-1])/2;
-                ctx.beginPath();
                 for (var k = 0; k < activations[i-1].length; k++) {
                     var activation = activations[i-1][k]*weights[i-1][j][k];
 
@@ -290,11 +264,12 @@ function draw_network(canvas, ctx, activations, weights, neuron_heights, drawing
                     var beginY = prevStartY + neuron_heights[i-1]*(k+0.5);
                     var endX = startX + i*neuron_spacing;
                     var endY = startY + neuron_heights[i]*(j+0.5);
-                    draw_synapse(ctx, beginX, beginY, endX, endY, 2*activation);
+                    if (activation > synapse_epsilon || activation < -synapse_epsilon) {
+                      draw_synapse(ctx, beginX, beginY, endX, endY, 2*activation);
+                    }
                 }
-                ctx.stroke();
             }
-	    }
+      }
     }
     // Draw labels
     ctx.font = "25px Arial";
@@ -312,10 +287,10 @@ function draw_network(canvas, ctx, activations, weights, neuron_heights, drawing
     ctx.fillText("output",         815, 482);
 }
 
-function run_network(drawingSynapses) {
+function run_network(synapse_epsilon=0) {
     var pixels = normalize_and_visualize_input();
     var activations = evaluate_network(pixels);
     var result = argmax(activations[3]);
     $("#output").text("Guess: " + result);
-    draw_network(networkCanvas, networkCtx, activations, network.weights, [0.7, 1.8, 1.8, 30], drawingSynapses);
+    draw_network(networkCanvas, networkCtx, activations, network.weights, [0.7, 1.8, 1.8, 30], synapse_epsilon);
 }
