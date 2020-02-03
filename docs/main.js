@@ -1,37 +1,27 @@
 "use strict";
+
 var mouseDown = false;
 var prevX, prevY;
 
 var drawingCanvas;
 var drawingCtx;
-var boundingCanvas;
-var boundingCtx;
 var scaledCanvas;
 var scaledCtx;
-var scaledTLCanvas;
-var scaledTLCtx;
 var pixelCanvas;
 var pixelCtx;
 var networkCanvas;
 var networkCtx;
 var outputText;
-
-var targetTime = 0;
-
-var timeout;
+var drawHereTextShowing;
+var synapseDrawingIterator;
 
 window.addEventListener("DOMContentLoaded", () => {
   drawingCanvas = document.getElementById("drawingCanvas");
   drawingCtx = drawingCanvas.getContext("2d");
 
-  boundingCanvas = document.getElementById("boundingCanvas");
-  boundingCtx = boundingCanvas.getContext("2d");
-
-  scaledCanvas = document.getElementById("scaledCanvas");
+  scaledCanvas = document.createElement("canvas");
+  scaledCanvas.width = scaledCanvas.height = 20;
   scaledCtx = scaledCanvas.getContext("2d");
-
-  scaledTLCanvas = document.getElementById("scaledTopLayerCanvas");
-  scaledTLCtx = scaledTLCanvas.getContext("2d");
 
   pixelCanvas = document.getElementById("pixelCanvas");
   pixelCtx = pixelCanvas.getContext("2d");
@@ -41,8 +31,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
   outputText = document.getElementById("output");
 
-  var drawHereTextShowing = true;
-  drawHereText(drawingCanvas, drawingCtx);
+  on_network_ready(() => {
+    run_network(false, true);
+    drawHereText(drawingCanvas, drawingCtx);
+  });
 
   drawingCanvas.addEventListener("pointerdown", function(e) {
     if (drawHereTextShowing) {
@@ -61,12 +53,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
   drawingCanvas.addEventListener("pointermove", function(e) {
     if (mouseDown) {
-      /*if (typeof timout !== 'undefined') {
-              clearTimeout(timeout);
-            }*/
-      //timeout = setTimeout(function() {run_network();}, 500);
       clearCalculatedBoxes();
-      run_network(0.3);
+      run_network(false);
       let rect = drawingCanvas.getBoundingClientRect();
       let x = e.clientX - rect.left;
       let y = e.clientY - rect.top;
@@ -80,7 +68,7 @@ window.addEventListener("DOMContentLoaded", () => {
   drawingCanvas.addEventListener("pointerup", function(e) {
     if (mouseDown) {
       mouseDown = false;
-      run_network();
+      run_network(true);
     }
   });
 
@@ -91,26 +79,28 @@ window.addEventListener("DOMContentLoaded", () => {
   clearBtn.addEventListener("click", function() {
     drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
     clearCalculatedBoxes();
+    run_network(false, true);
+    outputText.innerHTML = "Guess: ?";
+    drawHereText(drawingCanvas, drawingCtx);
   });
 });
 
 function drawHereText(canvas, ctx) {
-  ctx.font = "18px arial";
-  ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-  ctx.fillText("Draw a digit here", 30, 100);
+  ctx.font = "30px arial";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+  ctx.fillText("draw a digit here", 40, 155);
+  drawHereTextShowing = true;
 }
 
 function clearCalculatedBoxes() {
-  outputText.innerHTML = "Guess: ?";
-  boundingCtx.clearRect(0, 0, boundingCanvas.width, boundingCanvas.height);
+  synapseDrawingIterator = undefined;
   scaledCtx.clearRect(0, 0, scaledCanvas.width, scaledCanvas.height);
-  scaledTLCtx.clearRect(0, 0, scaledTLCanvas.width, scaledTLCanvas.height);
-  pixelCtx.clearRect(0, 0, pixelCanvas.width, pixelCanvas.height);
   networkCtx.clearRect(0, 0, networkCanvas.width, networkCanvas.height);
+  pixelCtx.clearRect(0, 0, pixelCanvas.width, pixelCanvas.height);
 }
 
 function draw_line(ctx, x1, y1, x2, y2) {
-  ctx.lineWidth = 20;
+  ctx.lineWidth = 30;
   ctx.lineJoin = "round";
   ctx.strokeStyle = "black";
 
@@ -153,12 +143,14 @@ Number.prototype.clamp = function(min, max) {
 };
 
 function draw_synapse(ctx, x1, y1, x2, y2, magnitude) {
-  var alpha = Math.abs(magnitude * 0.3).clamp(0, 1);
+  let alpha = Math.abs(magnitude * 0.3).clamp(0, 1);
 
-  var clamped = (magnitude * 2).clamp(-1, 1);
+  let clamped = (magnitude * 2).clamp(-1, 1);
   ctx.lineWidth = alpha * 3;
   if (clamped < 0) ctx.strokeStyle = rgba(0, 0, 0, alpha);
   else ctx.strokeStyle = rgba(0, 255, 255, alpha);
+  
+  ctx.lineJoin = "round";
 
   ctx.beginPath();
   ctx.moveTo(x1, y1);
@@ -168,15 +160,15 @@ function draw_synapse(ctx, x1, y1, x2, y2, magnitude) {
 }
 
 function get_crop_bounds(canvas, ctx) {
-  var width = canvas.width;
-  var height = canvas.height;
-  var stride = 4; // number of color channels
-  var data = ctx.getImageData(0, 0, width, height).data;
+  let width = canvas.width;
+  let height = canvas.height;
+  let stride = 4; // number of color channels
+  let data = ctx.getImageData(0, 0, width, height).data;
 
-  var bounds = { left: width, right: 0, top: height, bottom: 0 };
-  for (var y = 0; y < height; y++) {
-    for (var x = 0; x < width; x++) {
-      var i = (y * width + x) * stride + 3;
+  let bounds = { left: width, right: 0, top: height, bottom: 0 };
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let i = (y * width + x) * stride + 3;
       if (data[i] !== 0) {
         // only checking alpha channel
         bounds.left = Math.min(bounds.left, x);
@@ -208,8 +200,6 @@ function get_crop_bounds(canvas, ctx) {
 function normalize_and_visualize_input() {
   clearCalculatedBoxes();
   let bounds = get_crop_bounds(drawingCanvas, drawingCtx);
-  boundingCtx.drawImage(drawingCanvas, 0, 0);
-  draw_bounding_box(boundingCtx, bounds);
   scaledCtx.drawImage(
     drawingCanvas,
     bounds.left,
@@ -222,8 +212,6 @@ function normalize_and_visualize_input() {
     20
   );
   let centroid = get_center_of_mass(scaledCanvas, scaledCtx);
-  draw_crosshair(scaledTLCtx, (centroid.x * 200) / 20, (centroid.y * 200) / 20, 10);
-
   pixelCtx.drawImage(scaledCanvas, 0, 0, 20, 20, 14 - centroid.x, 14 - centroid.y, 20, 20);
 
   // extract pixel data
@@ -237,17 +225,17 @@ function normalize_and_visualize_input() {
 }
 
 function get_center_of_mass(canvas, ctx) {
-  var width = canvas.width;
-  var height = canvas.height;
-  var stride = 4; // number of color channels
-  var data = ctx.getImageData(0, 0, width, height).data;
-  var sumX = 0;
-  var sumY = 0;
-  var sumW = 0;
+  let width = canvas.width;
+  let height = canvas.height;
+  let stride = 4; // number of color channels
+  let data = ctx.getImageData(0, 0, width, height).data;
+  let sumX = 0;
+  let sumY = 0;
+  let sumW = 0;
 
-  for (var y = 0; y < height; y++) {
-    for (var x = 0; x < width; x++) {
-      var i = (y * width + x) * stride + 3;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let i = (y * width + x) * stride + 3;
       sumX += data[i] * x;
       sumY += data[i] * y;
       sumW += data[i];
@@ -256,69 +244,101 @@ function get_center_of_mass(canvas, ctx) {
   return { x: sumX / sumW, y: sumY / sumW };
 }
 
-function draw_network(canvas, ctx, activations, weights, neuron_heights, synapse_epsilon = 0.0) {
-  var startX = 90;
-  var neuron_width = 80;
-  var neuron_spacing = 240;
-  for (var i = 0; i < activations.length; i++) {
-    for (var j = 0; j < activations[i].length; j++) {
-      var startY = (600 - activations[i].length * neuron_heights[i]) / 2;
-
-      // Draw neuron activation
-      var a = activations[i][j];
-      ctx.fillStyle = rgba(0, 255 * a, 255 * a, 1);
-      ctx.fillRect(
-        startX + i * neuron_spacing,
-        startY + j * neuron_heights[i],
-        neuron_width,
-        neuron_heights[i]
-      );
-
-      // Draw input synapses
-      if (i > 0) {
-        ctx.lineJoin = "round";
-        var prevStartY = (600 - activations[i - 1].length * neuron_heights[i - 1]) / 2;
-        for (var k = 0; k < activations[i - 1].length; k++) {
-          var activation = activations[i - 1][k] * weights[i - 1][j][k];
-
-          var beginX = startX + (i - 1) * neuron_spacing + neuron_width;
-          var beginY = prevStartY + neuron_heights[i - 1] * (k + 0.5);
-          var endX = startX + i * neuron_spacing;
-          var endY = startY + neuron_heights[i] * (j + 0.5);
-          if (activation > synapse_epsilon || activation < -synapse_epsilon) {
-            draw_synapse(ctx, beginX, beginY, endX, endY, 2 * activation);
-          }
+function* synapse_drawing_iterator(canvas, ctx, activations, weights, neuron_heights) {
+  let startX = 90;
+  let neuron_width = 80;
+  let neuron_spacing = 240;
+  for (let i = 1; i < activations.length; i++) {
+    for (let j = 0; j < activations[i - 1].length; j++) {
+      let startY = (700 - activations[i - 1].length * neuron_heights[i - 1]) / 2;
+      let nextStartY = (700 - activations[i].length * neuron_heights[i]) / 2;
+      for (let k = 0; k < activations[i].length; k++) {
+        let activation = activations[i - 1][j] * weights[i - 1][k][j];
+        if (activation < -0.01 || activation > 0.01) {
+          let beginX = startX + (i - 1) * neuron_spacing + neuron_width;
+          let beginY = startY + neuron_heights[i - 1] * (j + 0.5);
+          let endX = startX + i * neuron_spacing;
+          let endY = nextStartY + neuron_heights[i] * (k + 0.5);
+          draw_synapse(ctx, beginX, beginY, endX, endY, 2 * activation);
         }
+        yield;
       }
     }
   }
+}
+
+function draw_network(canvas, ctx, activations, weights, neuron_heights, draw_synapses, reset) {
+  let startX = 90;
+  let neuron_width = 80;
+  let neuron_spacing = 240;
+  ctx.strokeStyle = "rgba(0, 0, 0, 0)";
+  for (let i = 0; i < activations.length; i++) {
+    for (let j = 0; j < activations[i].length; j++) {
+      let startY = (700 - activations[i].length * neuron_heights[i]) / 2;
+
+      // Draw neuron activation
+      let a = activations[i][j];
+      if (reset) {
+        // Empty network, fill with black
+        ctx.fillStyle = rgba(0, 0, 0, 1.0);
+      } else {
+        ctx.fillStyle = rgba(0, 255*a, 255*a, 1.0);
+      }
+      ctx.fillRect(
+        startX + i * neuron_spacing,
+        startY + j * neuron_heights[i]+0.0001,
+        neuron_width,
+        neuron_heights[i]
+      );
+    }
+  }
   // Draw labels
-  ctx.font = "25px Arial";
+  ctx.font = "25px arial";
   ctx.fillStyle = "rgba(0, 0, 0, 1)";
 
-  var startY = (600 - activations[3].length * neuron_heights[3]) / 2;
-  for (i = 0; i < 10; i++) {
+  let startY = (700 - activations[3].length * neuron_heights[3]) / 2;
+  for (let i = 0; i < 10; i++) {
     ctx.fillText(i.toString(), 905, startY + neuron_heights[3] / 2 + i * neuron_heights[3] + 8);
   }
 
   ctx.fillText("pixel", 20, 300);
   ctx.fillText("inputs", 15, 330);
-  ctx.fillText("hidden layer 1", 300, 560);
-  ctx.fillText("hidden layer 2", 540, 560);
+  ctx.fillText("hidden layer 1", 300, 645);
+  ctx.fillText("hidden layer 2", 540, 645);
   ctx.fillText("output", 815, 482);
 }
 
-function run_network(synapse_epsilon = 0) {
-  var pixels = normalize_and_visualize_input();
-  var activations = evaluate_network(pixels);
-  var result = argmax(activations[3]);
+function run_network(draw_synapses = false, reset = false) {
+  let pixels = normalize_and_visualize_input();
+  let activations = evaluate_network(pixels);
+  let result = argmax(activations[3]);
   outputText.innerHTML = "Guess: " + result;
   draw_network(
     networkCanvas,
     networkCtx,
     activations,
     network.weights,
-    [0.7, 1.8, 1.8, 30],
-    synapse_epsilon
+    [1, 2, 2, 30],
+    draw_synapses,
+    reset
   );
+  if (draw_synapses) {
+    synapseDrawingIterator = synapse_drawing_iterator(networkCanvas, networkCtx, activations, network.weights, [1, 2, 2, 30]);
+  }
 }
+
+function draw_some_synapses() {
+  if (typeof synapseDrawingIterator === 'undefined') {
+    return;
+  }
+  let start = Date.now();
+  for (let i = 0; i < 10000; i++) {
+    let result = synapseDrawingIterator.next();
+    if (result.done) {
+      break;
+    }
+  }
+  let end = Date.now();
+}
+
+setInterval(draw_some_synapses, 20);

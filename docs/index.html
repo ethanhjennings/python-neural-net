@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
   <head>
     <script type="text/javascript" src="neural_network.js"></script>
@@ -15,7 +16,8 @@
       }
 
       p {
-        width: 800px;
+        width: 100%;
+        max-width: 800px;
       }
 
       .wrapper {
@@ -25,6 +27,8 @@
         margin-top: 15px;
         margin-left: 5px;
         margin-right: 5px;
+        user-select:none;
+        -webkit-user-select: none;
       }
 
       .digitCanvas {
@@ -36,49 +40,57 @@
         position: relative;
         top: 0;
         left: 0;
-        width: 200;
-        height: 200;
+        width: 300px;
+        height: 300px;
         touch-action: none;
       }
 
       #clearBtn {
         position: absolute;
-        left: 5;
-        top: 5;
+        width: 60px;
+        height: 30px;
+        line-height: 30px;
+        left: 10px;
+        top: 12px;
         z-index: 5;
+        margin: 0 auto;
+
+        font-size: 20px;
+        border:1px solid #aaa;
+        background:#ddd;
+        cursor:pointer;
+        user-select:none;
+      }
+
+      #clearBtn:hover {
+        border:1px solid #444;
+      }
+
+      #clearBtn:active {
+        border:1px solid #444;
+        background:#aaa;
       }
 
       #pixelCanvas {
-        width: 200;
-        height: 200;
+        width: 300px;
+        height: 300px;
         image-rendering: pixelated;
-      }
-
-      #scaledCanvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 200;
-        height: 200;
-        image-rendering: pixelated;
-        z-index: -6;
-      }
-
-      #scaledTopLayerCanvas {
-        z-index: -5;
       }
 
       #output {
+        margin-top: 20px;
         font-size: 30px;
       }
 
       #networkCanvas {
         display: block;
         width: 666px;
-        height: 400px;
+        height: 466px;
         padding: 0;
         margin: auto;
+        margin-top: 20px;
         display: block;
+        image-rendering: auto;
       }
 
       .keySpan {
@@ -88,23 +100,18 @@
     </style>
   </head>
   <body>
-    <div class="wrapper">
-      <canvas id="drawingCanvas" class="digitCanvas" width="200" height="200"></canvas>
-      <button id="clearBtn">Clear</button>
-    </div>
-    <div class="wrapper">
-      <canvas id="boundingCanvas" class="digitCanvas" width="200" height="200"></canvas>
-    </div>
-    <div class="wrapper">
-      <canvas id="scaledCanvas" class="digitCanvas" width="20" height="20"></canvas>
-      <canvas id="scaledTopLayerCanvas" width="200" height="200"></canvas>
-    </div>
-    <div class="wrapper">
-      <canvas id="pixelCanvas" class="digitCanvas" width="28" height="28"></canvas>
+    <div style="text-align: center">
+      <div class="wrapper">
+        <canvas id="drawingCanvas" class="digitCanvas" width="300" height="300"></canvas>
+        <div id="clearBtn">clear</div>
+      </div>
+      <div class="wrapper">
+        <canvas id="pixelCanvas" class="digitCanvas" width="28" height="28"></canvas>
+      </div>
     </div>
     <div style="text-align: center">
-      <canvas id="networkCanvas" width="1000" height="600"></canvas>
-      <span id="output">Guess: ?</span>
+      <canvas id="networkCanvas" width="1000" height="700"></canvas>
+      <div id="output">Guess: ?</div>
     </div>
     <div style="text-align: center; margin-top:40px; margin-bottom:0px;">
       <b>key:</b>

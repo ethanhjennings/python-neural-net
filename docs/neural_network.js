@@ -1,4 +1,5 @@
 var network = null;
+var ready_callback = null;
 
 function get_json(url, callback) {
   let xhr = new XMLHttpRequest();
@@ -7,6 +8,7 @@ function get_json(url, callback) {
     if(xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
       let json = JSON.parse(xhr.responseText);
       callback(json);
+      ready_callback();
     }
   }
   xhr.send();
@@ -15,6 +17,14 @@ function get_json(url, callback) {
 get_json("network.json", function(data) {
   network = data;
 });
+
+function on_network_ready(callback) {
+  ready_callback = callback;
+  if (network !== null) {
+    // Already done loading!
+    ready_callback();
+  }
+}
 
 function dot(matrix, vec) {
   outputVec = [];
