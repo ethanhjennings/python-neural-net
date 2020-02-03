@@ -160,16 +160,11 @@
       handwriten digits dataset.
     </p>
     <p>
-      The four white boxes on top illustrate the process of normalizing the images. This consists of
-      finding the bounding box and centroid, compressing the cropped image to 20x20 pixels, and
-      finally centering the image on the centroid in a 28x28 pixel square. The pixels of the final
-      normalized image on the right are then fed into the input layer, and the classification guess
-      is chosen by picking the highest value in the output layer.
+      The pixelated box on the top right is the actual raw input that's fed into the network. The network was only trained to accept a 20x20 pixel image, so the original input has to be scaled down. In addition to scaling the input data is centered on its centroid. This way a '7' drawn off-center or much smaller will still be recognized just as well as a well centered large '7'. This pre-processing was also applied to all the training data in exaclty the same way.
     </p>
     <p>
-      In the visualization, neuron layers are drawn as vertical stacks of as thin rectangles, and
-      synapses as connecting lines. These are colored and shaded according to the key above. The
-      network as drawn on an HTML canvas using javascript.
+      In the visualization, neuron layers are drawn as vertical stacks of thin rectangles, and
+      synapse activation values as connecting lines. See the key above for what the colors mean. Synapse activations are filled in gradually to save processing time, since drawing 30k lines all at once is pretty slow in javascript.
     </p>
     <a href="https://github.com/ethanhjennings/python-neural-net">
       View more info and source code on github.
