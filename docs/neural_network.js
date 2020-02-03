@@ -1,6 +1,18 @@
 var network = null;
 
-$.getJSON("network.json", function(data) {
+function get_json(url, callback) {
+  let xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.onreadystatechange = function() {
+    if(xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+      let json = JSON.parse(xhr.responseText);
+      callback(json);
+    }
+  }
+  xhr.send();
+}
+
+get_json("network.json", function(data) {
   network = data;
 });
 

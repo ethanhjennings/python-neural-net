@@ -14,6 +14,7 @@ var pixelCanvas;
 var pixelCtx;
 var networkCanvas;
 var networkCtx;
+var outputText;
 
 var targetTime = 0;
 
@@ -23,39 +24,42 @@ window.addEventListener("DOMContentLoaded", () => {
   drawingCanvas = document.getElementById("drawingCanvas");
   drawingCtx = drawingCanvas.getContext("2d");
 
-  boundingCanvas = $("#boundingCanvas")[0];
+  boundingCanvas = document.getElementById("boundingCanvas");
   boundingCtx = boundingCanvas.getContext("2d");
 
-  scaledCanvas = $("#scaledCanvas")[0];
+  scaledCanvas = document.getElementById("scaledCanvas");
   scaledCtx = scaledCanvas.getContext("2d");
 
-  scaledTLCanvas = $("#scaledTopLayerCanvas")[0];
+  scaledTLCanvas = document.getElementById("scaledTopLayerCanvas");
   scaledTLCtx = scaledTLCanvas.getContext("2d");
 
-  pixelCanvas = $("#pixelCanvas")[0];
+  pixelCanvas = document.getElementById("pixelCanvas");
   pixelCtx = pixelCanvas.getContext("2d");
 
-  networkCanvas = $("#networkCanvas")[0];
+  networkCanvas = document.getElementById("networkCanvas");
   networkCtx = networkCanvas.getContext("2d");
+
+  outputText = document.getElementById("output");
 
   var drawHereTextShowing = true;
   drawHereText(drawingCanvas, drawingCtx);
 
-  $("#drawingCanvas").bind("pointerdown", function(e) {
+  drawingCanvas.addEventListener("pointerdown", function(e) {
     if (drawHereTextShowing) {
       drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
       drawHereTextShowing = false;
     }
     mouseDown = true;
-    let x = e.pageX - $(this).offset().left;
-    let y = e.pageY - $(this).offset().top;
+    let rect = drawingCanvas.getBoundingClientRect();
+    let x = e.clientX - rect.left;
+    let y = e.clientY - rect.top;
     // use small delta to force canvas to draw a dot
     draw_line(drawingCtx, x - 0.01, y - 0.01, x + 0.01, y + 0.01);
     prevX = x;
     prevY = y;
   });
 
-  $("#drawingCanvas").bind("pointermove", function(e) {
+  drawingCanvas.addEventListener("pointermove", function(e) {
     if (mouseDown) {
       /*if (typeof timout !== 'undefined') {
               clearTimeout(timeout);
@@ -63,8 +67,9 @@ window.addEventListener("DOMContentLoaded", () => {
       //timeout = setTimeout(function() {run_network();}, 500);
       clearCalculatedBoxes();
       run_network(0.3);
-      let x = e.pageX - $(this).offset().left;
-      let y = e.pageY - $(this).offset().top;
+      let rect = drawingCanvas.getBoundingClientRect();
+      let x = e.clientX - rect.left;
+      let y = e.clientY - rect.top;
       draw_line(drawingCtx, prevX, prevY, x, y);
       prevX = x;
       prevY = y;
@@ -72,18 +77,18 @@ window.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
   });
 
-  $("#drawingCanvas").bind("touchend mouseup pointerup", function(e) {
+  drawingCanvas.addEventListener("pointerup", function(e) {
     if (mouseDown) {
       mouseDown = false;
       run_network();
     }
   });
 
-  $("#drawingCanvas").mouseleave(function(e) {
+  drawingCanvas.addEventListener("pointerleave", function(e) {
     mouseDown = false;
   });
 
-  $("#clearBtn").click(function() {
+  clearBtn.addEventListener("click", function() {
     drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
     clearCalculatedBoxes();
   });
@@ -96,7 +101,7 @@ function drawHereText(canvas, ctx) {
 }
 
 function clearCalculatedBoxes() {
-  $("#output").text("Guess: ?");
+  outputText.innerHTML = "Guess: ?";
   boundingCtx.clearRect(0, 0, boundingCanvas.width, boundingCanvas.height);
   scaledCtx.clearRect(0, 0, scaledCanvas.width, scaledCanvas.height);
   scaledTLCtx.clearRect(0, 0, scaledTLCanvas.width, scaledTLCanvas.height);
@@ -307,7 +312,7 @@ function run_network(synapse_epsilon = 0) {
   var pixels = normalize_and_visualize_input();
   var activations = evaluate_network(pixels);
   var result = argmax(activations[3]);
-  $("#output").text("Guess: " + result);
+  outputText.innerHTML = "Guess: " + result;
   draw_network(
     networkCanvas,
     networkCtx,
