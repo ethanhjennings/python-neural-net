@@ -305,7 +305,7 @@ function draw_network(canvas, ctx, activations, weights, neuron_heights, draw_sy
   ctx.fillText("inputs", 15, 330);
   ctx.fillText("hidden layer 1", 300, 645);
   ctx.fillText("hidden layer 2", 540, 645);
-  ctx.fillText("output", 815, 482);
+  ctx.fillText("output", 815, 540);
 }
 
 function run_network(draw_synapses = false, reset = false) {
