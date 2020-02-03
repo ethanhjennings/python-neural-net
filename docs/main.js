@@ -34,6 +34,7 @@ window.addEventListener("DOMContentLoaded", () => {
   on_network_ready(() => {
     run_network(false, true);
     drawHereText(drawingCanvas, drawingCtx);
+    outputText.innerHTML = "Guess: ?";
   });
 
   drawingCanvas.addEventListener("pointerdown", function(e) {
