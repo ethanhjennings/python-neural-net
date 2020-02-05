@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <title>Python Neural Net Visualization</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="Description" content="A visualzation for a neural network trained to recognzie handwritten digits.">
     <script type="text/javascript" src="neural_network.js"></script>
     <script type="text/javascript" src="main.js"></script>
@@ -18,9 +18,23 @@
         font-family: arial;
       }
 
-      p {
-        width: 100%;
-        max-width: 800px;
+      h1 {
+        font-size: 40px;
+        text-align: center;
+      }
+
+      @media only screen and (max-width: 600px) {
+        h1 {
+          font-size: 7vw;
+          text-align: center;
+          margin-top: 20px;
+        }
+      }
+
+      @media only screen and (max-width: 600px) {
+        table {
+          font-size: 3vw;
+        }
       }
 
       .wrapper {
@@ -43,22 +57,24 @@
         position: relative;
         top: 0;
         left: 0;
-        width: 300px;
-        height: 300px;
+        max-width: 250px;
+        max-height: 250px;
+        width: 43vw;
+        height: 43vw;
         touch-action: none;
       }
 
       #clearBtn {
         position: absolute;
-        width: 60px;
-        height: 30px;
-        line-height: 30px;
-        left: 10px;
-        top: 12px;
+        width: 40px;
+        height: 20px;
+        line-height: 20px;
+        left: 5px;
+        top: 5px;
         z-index: 5;
         margin: 0 auto;
 
-        font-size: 20px;
+        font-size: 14px;
         border:1px solid #aaa;
         background:#ddd;
         cursor:pointer;
@@ -75,8 +91,10 @@
       }
 
       #pixelCanvas {
-        width: 300px;
-        height: 300px;
+        max-width: 250px;
+        max-height: 250px;
+        width: 43vw;
+        height: 43vw;
         image-rendering: pixelated;
       }
 
@@ -87,8 +105,9 @@
 
       #networkCanvas {
         display: block;
-        width: 666px;
-        height: 466px;
+        width: 100vw;
+        max-width: 600px;
+        max-height: 420px;
         padding: 0;
         margin: auto;
         margin-top: 20px;
@@ -100,9 +119,18 @@
         padding-left: 40px;
         margin-right: 10px;
       }
+
+      article {
+        margin-top: 25px;
+        margin-left: 25px;
+        margin-right: 25px;
+        margin-bottom: 40px;
+        max-width: 800px;
+      }
     </style>
   </head>
   <body>
+    <h1>neural network visualizer</h1>
     <div style="text-align: center">
       <div class="wrapper">
         <canvas id="drawingCanvas" class="digitCanvas" width="300" height="300"></canvas>
@@ -153,26 +181,28 @@
         </tr>
       </table>
     </div>
-    <h2>About:</h2>
-    <p>
-      This is a visualization of a neural net that classifies human handwritten digits (0-9).
-      Training was implemented in Python and classification in Javascript so it can run in-browser.
-      It's a vanilla deep(ish) feedforward neural network whith two hidden layers of 256 nuerons. It
-      was trained on the
-      <a href="https://github.com/ethanhjennings/emnist-simplified">EMNIST</a>
-      handwriten digits dataset.
-    </p>
-    <p>
-      The pixelated box on the top right is the actual raw input that's fed into the network. The network was only trained to accept a 20x20 pixel image, so the original input has to be scaled down. In addition to scaling the input data is centered on its centroid. This way a '7' drawn off-center or much smaller will still be recognized just as well as a well centered large '7'. This pre-processing was also applied to all the training data in exaclty the same way.
-    </p>
-    <p>
-      In the visualization, neuron layers are drawn as vertical stacks of thin rectangles, and
-      synapse activation values as connecting lines. See the key above for what the colors mean. Synapse activations are filled in gradually to save processing time, since drawing 30k lines all at once is pretty slow in javascript.
-    </p>
-    <p  style="margin-bottom:60px">
-      <a href="https://github.com/ethanhjennings/python-neural-net">
-        View more info and source code on github.
-      </a>
-    </p>
+    <article>
+      <h2>About:</h2>
+      <p>
+        This is a visualization of a neural net that classifies human handwritten digits (0-9).
+        Training was implemented in Python and classification in Javascript so it can run in-browser.
+        It's a vanilla deep(ish) feedforward neural network whith two hidden layers of 256 nuerons. It
+        was trained on the
+        <a href="https://github.com/ethanhjennings/emnist-simplified">EMNIST</a>
+        handwriten digits dataset.
+      </p>
+      <p>
+        The pixelated box on the top right is the actual raw input that's fed into the network. The network was only trained to accept a 20x20 pixel image, so the original input has to be scaled down. In addition to scaling the input data is centered on its centroid. This way a '7' drawn off-center or much smaller will still be recognized just as well as a well centered large '7'. This pre-processing was also applied to all the training data in exactly the same way.
+      </p>
+      <p>
+        In the visualization, neuron layers are drawn as vertical stacks of thin rectangles, and
+        synapse activation values as connecting lines. See the key above for what the colors mean. Synapse activations are filled in gradually to save processing time, since drawing 30k lines all at once is pretty slow in javascript.
+      </p>
+      <p>
+        <a href="https://github.com/ethanhjennings/python-neural-net">
+          View more info and source code on github.
+        </a>
+      </p>
+    </article>
   </body>
 </html>

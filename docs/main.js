@@ -44,8 +44,10 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     mouseDown = true;
     let rect = drawingCanvas.getBoundingClientRect();
-    let x = e.clientX - rect.left;
-    let y = e.clientY - rect.top;
+    let scale = drawingCanvas.scrollWidth/drawingCanvas.width;
+    let x = (e.clientX - rect.left)/scale;
+    let y = (e.clientY - rect.top)/scale;
+    console.log(drawingCanvas);
     // use small delta to force canvas to draw a dot
     draw_line(drawingCtx, x - 0.01, y - 0.01, x + 0.01, y + 0.01);
     prevX = x;
@@ -57,8 +59,9 @@ window.addEventListener("DOMContentLoaded", () => {
       clearCalculatedBoxes();
       run_network(false);
       let rect = drawingCanvas.getBoundingClientRect();
-      let x = e.clientX - rect.left;
-      let y = e.clientY - rect.top;
+      let scale = drawingCanvas.scrollWidth/drawingCanvas.width;
+      let x = (e.clientX - rect.left)/scale;
+      let y = (e.clientY - rect.top)/scale;
       draw_line(drawingCtx, prevX, prevY, x, y);
       prevX = x;
       prevY = y;
