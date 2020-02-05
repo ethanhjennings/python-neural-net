@@ -302,8 +302,8 @@ function draw_network(canvas, ctx, activations, weights, neuron_heights, draw_sy
     ctx.fillText(i.toString(), 905, startY + neuron_heights[3] / 2 + i * neuron_heights[3] + 8);
   }
 
-  ctx.fillText("pixel", 20, 300);
-  ctx.fillText("inputs", 15, 330);
+  ctx.fillText("pixel", 20, 340);
+  ctx.fillText("inputs", 15, 370);
   ctx.fillText("hidden layer 1", 300, 645);
   ctx.fillText("hidden layer 2", 540, 645);
   ctx.fillText("output", 815, 540);
