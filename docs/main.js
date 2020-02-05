@@ -47,9 +47,10 @@ window.addEventListener("DOMContentLoaded", () => {
     let scale = drawingCanvas.scrollWidth/drawingCanvas.width;
     let x = (e.clientX - rect.left)/scale;
     let y = (e.clientY - rect.top)/scale;
-    console.log(drawingCanvas);
     // use small delta to force canvas to draw a dot
     draw_line(drawingCtx, x - 0.01, y - 0.01, x + 0.01, y + 0.01);
+    clearCalculatedBoxes();
+    run_network(false);
     prevX = x;
     prevY = y;
   });
